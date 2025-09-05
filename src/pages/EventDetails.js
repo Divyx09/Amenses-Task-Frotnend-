@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, Users, Plus, X, Vote, ArrowLeft, Share2,
-  Clock, MapPin, User, Star, Heart, MessageCircle,
-  CheckCircle, AlertCircle, TrendingUp, BarChart3,
-  Image as ImageIcon, Play, Download, ExternalLink
+  Clock, MapPin, Star, Heart, MessageCircle,
+  CheckCircle, AlertCircle, TrendingUp,
+  Image as ImageIcon, Download
 } from 'lucide-react';
 import { eventsAPI, pollsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -28,17 +28,7 @@ const EventDetails = () => {
     options: ['', '']
   });
 
-  useEffect(() => {
-    if (id) {
-      fetchEventDetails();
-      fetchEventPolls();
-    }
-    if (user && id) {
-      checkIfUserJoined();
-    }
-  }, [id, user]);
-
-  const fetchEventDetails = async () => {
+  const fetchEventDetails = useCallback(async () => {
     try {
       // Mock data for now - replace with actual API call
       const mockEvent = {
@@ -143,9 +133,9 @@ const EventDetails = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, user]);
 
-  const fetchEventPolls = async () => {
+  const fetchEventPolls = useCallback(async () => {
     try {
       const response = await pollsAPI.getByEvent(id);
       
@@ -203,9 +193,9 @@ const EventDetails = () => {
       ];
       setEventPolls(mockPolls);
     }
-  };
+  }, [id]);
 
-  const checkIfUserJoined = async () => {
+  const checkIfUserJoined = useCallback(async () => {
     if (!user || !id) return;
     
     try {
@@ -216,7 +206,7 @@ const EventDetails = () => {
       console.error('Error checking joined status:', err);
       setJoined(false);
     }
-  };
+  }, [user, id]);
 
   const handleJoinEvent = async () => {
     if (!user) {
@@ -230,7 +220,7 @@ const EventDetails = () => {
     }
     
     try {
-      const response = await eventsAPI.join(id);
+      await eventsAPI.join(id);
       setJoined(true);
       setEvent(prev => ({
         ...prev,
@@ -352,6 +342,16 @@ const EventDetails = () => {
       setError('Failed to vote');
     }
   };
+
+  useEffect(() => {
+    if (id) {
+      fetchEventDetails();
+      fetchEventPolls();
+    }
+    if (user && id) {
+      checkIfUserJoined();
+    }
+  }, [id, user, fetchEventDetails, fetchEventPolls, checkIfUserJoined]);
 
   if (loading) {
     return (

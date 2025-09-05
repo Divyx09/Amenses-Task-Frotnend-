@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Calendar, Users, MapPin, Star, Clock, ArrowRight, Vote, Plus, X
+  Calendar, Users, MapPin, Star, ArrowRight, Vote, Plus, X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { eventsAPI, pollsAPI } from '../services/api';
@@ -22,6 +22,20 @@ const Events = () => {
   
   const { user } = useAuth();
 
+  const fetchJoinedEvents = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const response = await eventsAPI.getJoined();
+      const joinedEventIds = response.data.map(event => event._id);
+      setJoinedEvents(new Set(joinedEventIds));
+    } catch (err) {
+      console.error('Error fetching joined events:', err);
+      // If API fails, initialize with empty set
+      setJoinedEvents(new Set());
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchEvents();
     if (user) {
@@ -35,7 +49,7 @@ const Events = () => {
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [user]);
+  }, [user, fetchJoinedEvents]);
 
   const fetchEvents = async () => {
     try {
@@ -158,20 +172,6 @@ const Events = () => {
     }
   };
 
-  const fetchJoinedEvents = async () => {
-    if (!user) return;
-    
-    try {
-      const response = await eventsAPI.getJoined();
-      const joinedEventIds = response.data.map(event => event._id);
-      setJoinedEvents(new Set(joinedEventIds));
-    } catch (err) {
-      console.error('Error fetching joined events:', err);
-      // If API fails, initialize with empty set
-      setJoinedEvents(new Set());
-    }
-  };
-
   const handleJoinEvent = async (eventId) => {
     if (!user) {
       alert('Please login to join events');
@@ -184,7 +184,7 @@ const Events = () => {
     }
     
     try {
-      const response = await eventsAPI.join(eventId);
+      await eventsAPI.join(eventId);
       // Update local state immediately
       setJoinedEvents(prev => new Set([...prev, eventId]));
       alert('Successfully joined the event!');
