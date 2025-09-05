@@ -31,7 +31,6 @@ const Events = () => {
       setJoinedEvents(new Set(joinedEventIds));
     } catch (err) {
       console.error('Error fetching joined events:', err);
-      // If API fails, initialize with empty set
       setJoinedEvents(new Set());
     }
   }, [user]);
@@ -42,7 +41,6 @@ const Events = () => {
       fetchJoinedEvents();
     }
     
-    // Handle window resize for responsive design
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
     };
@@ -55,114 +53,7 @@ const Events = () => {
     try {
       setLoading(true);
       const response = await eventsAPI.getAll();
-      
-      // Mock data for demonstration - styled like the reference image
-      const mockEvents = [
-        {
-          _id: '1',
-          title: 'Developers Learning Community',
-          description: 'Join a program that turns you into a real developer, not just a learner.',
-          date: '2024-02-15',
-          time: '09:00 AM',
-          location: 'Ujjain',
-          category: 'Community',
-          imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',
-          attendees: 1250,
-          maxAttendees: 1500,
-          rating: 4.8,
-          price: 'Free',
-          organizer: 'DevCommunity',
-          bgColor: 'from-purple-600 to-purple-800',
-          buttonText: 'Join Community'
-        },
-        {
-          _id: '2',
-          title: 'React Node Internship Program',
-          description: 'A comprehensive program designed to transform aspiring developers into full-fledged web developers.',
-          date: '2024-02-20',
-          time: '02:00 PM',
-          location: 'Ujjain',
-          category: 'Internship',
-          imageUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=800',
-          attendees: 85,
-          maxAttendees: 100,
-          rating: 4.9,
-          price: 'Paid',
-          organizer: 'TechVraksh',
-          bgColor: 'from-blue-500 to-purple-600',
-          buttonText: 'Apply Now'
-        },
-        {
-          _id: '3',
-          title: 'Hackathons & Competitions',
-          description: 'Show off your skills and win exciting prizes in our competitive programming events.',
-          date: '2024-02-25',
-          time: '06:00 PM',
-          location: 'Multiple Cities',
-          category: 'Competition',
-          imageUrl: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800',
-          attendees: 450,
-          maxAttendees: 500,
-          rating: 4.7,
-          price: 'Free',
-          organizer: 'CodeChampions',
-          bgColor: 'from-orange-500 to-red-600',
-          buttonText: 'Join Hackathon'
-        },
-        {
-          _id: '4',
-          title: 'Datacode Developers Meetups',
-          description: 'Connect with fellow developers, share knowledge, and build amazing projects together.',
-          date: '2024-03-05',
-          time: '10:00 AM',
-          location: 'Ujjain',
-          category: 'Meetup',
-          imageUrl: 'https://images.unsplash.com/photo-1515169067868-5387ec359bb5?w=800',
-          attendees: 320,
-          maxAttendees: 400,
-          rating: 4.6,
-          price: 'Free',
-          organizer: 'Datacode.in',
-          bgColor: 'from-purple-500 to-indigo-600',
-          buttonText: 'Join Meetup'
-        },
-        {
-          _id: '5',
-          title: 'AI & Machine Learning Workshop',
-          description: 'Deep dive into artificial intelligence and machine learning with hands-on projects.',
-          date: '2024-03-10',
-          time: '01:00 PM',
-          location: 'Ujjain',
-          category: 'Workshop',
-          imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800',
-          attendees: 180,
-          maxAttendees: 200,
-          rating: 4.8,
-          price: '$199',
-          organizer: 'AI Institute',
-          bgColor: 'from-green-500 to-teal-600',
-          buttonText: 'Register Now'
-        },
-        {
-          _id: '6',
-          title: 'Startup Founders Summit',
-          description: 'Network with successful entrepreneurs and learn the secrets of building unicorn startups.',
-          date: '2024-03-15',
-          time: '11:00 AM',
-          location: 'Ujjain',
-          category: 'Summit',
-          imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
-          attendees: 280,
-          maxAttendees: 350,
-          rating: 4.9,
-          price: '$299',
-          organizer: 'Startup India',
-          bgColor: 'from-pink-500 to-rose-600',
-          buttonText: 'Get Tickets'
-        }
-      ];
-      
-      setEvents(response.data.length > 0 ? response.data : mockEvents);
+      setEvents(response.data || []);
       setError('');
     } catch (err) {
       console.error('Error fetching events:', err);
@@ -185,14 +76,12 @@ const Events = () => {
     
     try {
       await eventsAPI.join(eventId);
-      // Update local state immediately
       setJoinedEvents(prev => new Set([...prev, eventId]));
       alert('Successfully joined the event!');
     } catch (err) {
       console.error('Error joining event:', err);
       if (err.response?.status === 400 && err.response?.data?.message?.includes('already')) {
         alert('You have already joined this event!');
-        // Update local state to reflect the backend state
         setJoinedEvents(prev => new Set([...prev, eventId]));
       } else {
         alert('Failed to join event. Please try again.');
@@ -395,6 +284,7 @@ const Events = () => {
           </motion.div>
         </div>
         {/* Events Cards Grid */}
+        {events.length > 0 ? (
         <div 
           className="events-grid-responsive"
           style={{ 
@@ -660,18 +550,13 @@ const Events = () => {
             </motion.div>
           ))}
         </div>
-
-        {/* Empty State */}
-        {events.length === 0 && (
+        ) : (
           <div className="text-center py-20">
             <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
               <Calendar className="h-16 w-16 text-white" />
             </div>
             <h3 className="text-4xl font-bold text-gray-800 mb-4">No Events Available</h3>
             <p className="text-xl text-gray-600 mb-8">Check back later for exciting upcoming events.</p>
-            <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 transform hover:scale-105">
-              Create Your First Event
-            </button>
           </div>
         )}
       </div>
