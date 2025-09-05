@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Calendar, Users, MapPin, Star, ArrowRight, Vote, Plus, X
+  Calendar, Users, MapPin, Star, ArrowRight, Vote, Plus, X, FileEdit
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { eventsAPI, pollsAPI } from '../services/api';
@@ -18,6 +18,16 @@ const Events = () => {
   const [pollFormData, setPollFormData] = useState({
     question: '',
     options: ['', '']
+  });
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [eventFormData, setEventFormData] = useState({
+    title: '',
+    description: '',
+    date: '',
+    time: '',
+    location: '',
+    category: '',
+    organizer: ''
   });
   
   const { user } = useAuth();
@@ -86,6 +96,65 @@ const Events = () => {
       } else {
         alert('Failed to join event. Please try again.');
       }
+    }
+  };
+
+  const handleCreateEvent = async () => {
+    if (!user) {
+      alert('Please login to create events');
+      return;
+    }
+    
+    // Validate required fields
+    if (!eventFormData.title.trim()) {
+      alert('Please enter an event title');
+      return;
+    }
+    
+    if (!eventFormData.description.trim()) {
+      alert('Please enter an event description');
+      return;
+    }
+    
+    if (!eventFormData.date) {
+      alert('Please select an event date');
+      return;
+    }
+    
+    if (!eventFormData.time) {
+      alert('Please select an event time');
+      return;
+    }
+    
+    try {
+      await eventsAPI.create({
+        title: eventFormData.title,
+        description: eventFormData.description,
+        date: eventFormData.date,
+        time: eventFormData.time,
+        location: eventFormData.location || 'Ujjain',
+        category: eventFormData.category || 'General',
+        organizer: eventFormData.organizer || user.name || 'Anonymous'
+      });
+      
+      // Reset form
+      setEventFormData({
+        title: '',
+        description: '',
+        date: '',
+        time: '',
+        location: '',
+        category: '',
+        organizer: ''
+      });
+      setShowCreateEventModal(false);
+      alert('Event created successfully!');
+      
+      // Refresh events list
+      fetchEvents();
+    } catch (err) {
+      console.error('Error creating event:', err);
+      alert('Failed to create event. Please try again.');
     }
   };
 
@@ -182,59 +251,420 @@ const Events = () => {
     return (
       <div style={{ 
         minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        backgroundColor: '#fafafa'
+        backgroundColor: '#fafafa',
+        padding: isMobile ? '24px 0' : '48px 0'
       }}>
-        <div style={{
-          textAlign: 'center',
-          background: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #e5e7eb',
-          padding: '40px',
-          maxWidth: '400px'
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ 
+          paddingTop: isMobile ? '6px' : '48px',
+          paddingBottom: isMobile ? '6px' : '48px' 
         }}>
+          {/* Header */}
+          <div className="text-center" style={{ marginBottom: isMobile ? '32px' : '64px' }}>
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <h1 style={{
+                fontSize: isMobile ? '36px' : '64px',
+                fontWeight: 'bold',
+                background: 'linear-gradient(to right, #2563eb, #9333ea, #ec4899)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: '24px',
+                lineHeight: '1.1'
+              }}>
+                Upcoming Events
+              </h1>
+              <p style={{
+                fontSize: isMobile ? '18px' : '24px',
+                color: '#6b7280',
+                maxWidth: '896px',
+                margin: '0 auto',
+                lineHeight: '1.6',
+                padding: isMobile ? '0 16px' : '0'
+              }}>
+                Discover amazing events and connect with like-minded professionals
+              </p>
+              <div className="mt-8 flex justify-center">
+                <div className="w-24 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full"></div>
+              </div>
+              
+              {/* Create Event Button */}
+              {user && (
+                <div className="mt-8">
+                  <button
+                    onClick={() => setShowCreateEventModal(true)}
+                    style={{
+                      background: 'linear-gradient(to right, #2563eb, #8b5cf6)',
+                      color: 'white',
+                      fontWeight: '600',
+                      padding: '12px 32px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      fontSize: '16px',
+                      boxShadow: '0 4px 15px rgba(37, 99, 235, 0.3)',
+                      margin: '0 auto'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 8px 25px rgba(37, 99, 235, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 15px rgba(37, 99, 235, 0.3)';
+                    }}
+                  >
+                    <FileEdit style={{ height: '18px', width: '18px' }} />
+                    <span>Create New Event</span>
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Error Message */}
           <div style={{
-            width: '60px',
-            height: '60px',
-            background: '#fef2f2',
-            borderRadius: '50%',
+            textAlign: 'center',
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e5e7eb',
+            padding: '40px',
+            maxWidth: '400px',
+            margin: '0 auto'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              background: '#fef2f2',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              border: '1px solid #fecaca'
+            }}>
+              <Calendar style={{ height: '28px', width: '28px', color: '#dc2626' }} />
+            </div>
+            <h2 style={{ 
+              fontSize: '24px', 
+              fontWeight: 'bold', 
+              color: '#111827', 
+              marginBottom: '12px' 
+            }}>
+              Oops! Something went wrong
+            </h2>
+            <p style={{ color: '#6b7280', marginBottom: '20px' }}>{error}</p>
+            <button 
+              onClick={fetchEvents}
+              style={{
+                background: '#3b82f6',
+                color: 'white',
+                fontWeight: '600',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: '1px solid #2563eb',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+        
+        {/* Create Event Modal - Include modals even in error state */}
+        {showCreateEventModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 20px',
-            border: '1px solid #fecaca'
+            zIndex: 1000,
+            padding: '20px'
           }}>
-            <Calendar style={{ height: '28px', width: '28px', color: '#dc2626' }} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                padding: '32px',
+                width: '100%',
+                maxWidth: '600px',
+                maxHeight: '80vh',
+                overflow: 'auto',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>Create New Event</h3>
+                <button
+                  onClick={() => {
+                    setShowCreateEventModal(false);
+                    setEventFormData({
+                      title: '',
+                      description: '',
+                      date: '',
+                      time: '',
+                      location: '',
+                      category: '',
+                      organizer: ''
+                    });
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    color: '#6b7280'
+                  }}
+                >
+                  <X style={{ height: '24px', width: '24px' }} />
+                </button>
+              </div>
+
+              {/* Event Form Fields */}
+              <div style={{ display: 'grid', gap: '20px' }}>
+                {/* Title */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                    Event Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={eventFormData.title}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter event title"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                    Description *
+                  </label>
+                  <textarea
+                    value={eventFormData.description}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe your event"
+                    rows="3"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      resize: 'vertical'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  />
+                </div>
+
+                {/* Date and Time Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                      Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={eventFormData.date}
+                      onChange={(e) => setEventFormData(prev => ({ ...prev, date: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '16px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                      onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                      Time *
+                    </label>
+                    <input
+                      type="time"
+                      value={eventFormData.time}
+                      onChange={(e) => setEventFormData(prev => ({ ...prev, time: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '16px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                      onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                    />
+                  </div>
+                </div>
+
+                {/* Location and Category Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={eventFormData.location}
+                      onChange={(e) => setEventFormData(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="Event location (default: Ujjain)"
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '16px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                      onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                      Category
+                    </label>
+                    <select
+                      value={eventFormData.category}
+                      onChange={(e) => setEventFormData(prev => ({ ...prev, category: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid #d1d5db',
+                        fontSize: '16px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s',
+                        backgroundColor: 'white'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                      onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                    >
+                      <option value="">Select category</option>
+                      <option value="Technology">Technology</option>
+                      <option value="Business">Business</option>
+                      <option value="Education">Education</option>
+                      <option value="Entertainment">Entertainment</option>
+                      <option value="Sports">Sports</option>
+                      <option value="Health">Health</option>
+                      <option value="General">General</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Organizer */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                    Organizer Name
+                  </label>
+                  <input
+                    type="text"
+                    value={eventFormData.organizer}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, organizer: e.target.value }))}
+                    placeholder={`Your name (default: ${user?.name || 'Anonymous'})`}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '32px' }}>
+                <button
+                  onClick={() => {
+                    setShowCreateEventModal(false);
+                    setEventFormData({
+                      title: '',
+                      description: '',
+                      date: '',
+                      time: '',
+                      location: '',
+                      category: '',
+                      organizer: ''
+                    });
+                  }}
+                  style={{
+                    background: '#f3f4f6',
+                    color: '#374151',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateEvent}
+                  style={{
+                    background: 'linear-gradient(to right, #2563eb, #8b5cf6)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600'
+                  }}
+                >
+                  Create Event
+                </button>
+              </div>
+            </motion.div>
           </div>
-          <h2 style={{ 
-            fontSize: '24px', 
-            fontWeight: 'bold', 
-            color: '#111827', 
-            marginBottom: '12px' 
-          }}>
-            Oops! Something went wrong
-          </h2>
-          <p style={{ color: '#6b7280', marginBottom: '20px' }}>{error}</p>
-          <button 
-            onClick={fetchEvents}
-            style={{
-              background: '#3b82f6',
-              color: 'white',
-              fontWeight: '600',
-              padding: '10px 20px',
-              borderRadius: '8px',
-              border: '1px solid #2563eb',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            Try Again
-          </button>
-        </div>
+        )}
       </div>
     );
   }
@@ -281,6 +711,43 @@ const Events = () => {
             <div className="mt-8 flex justify-center">
               <div className="w-24 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full"></div>
             </div>
+            
+            {/* Create Event Button */}
+            {user && (
+              <div className="mt-8">
+                <button
+                  onClick={() => setShowCreateEventModal(true)}
+                  style={{
+                    background: 'linear-gradient(to right, #2563eb, #8b5cf6)',
+                    color: 'white',
+                    fontWeight: '600',
+                    padding: '12px 32px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontSize: '16px',
+                    boxShadow: '0 4px 15px rgba(37, 99, 235, 0.3)',
+                    margin: '0 auto'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 8px 25px rgba(37, 99, 235, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(37, 99, 235, 0.3)';
+                  }}
+                >
+                  <FileEdit style={{ height: '18px', width: '18px' }} />
+                  <span>Create New Event</span>
+                </button>
+              </div>
+            )}
           </motion.div>
         </div>
         {/* Events Cards Grid */}
@@ -735,6 +1202,290 @@ const Events = () => {
                 }}
               >
                 Create Poll
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Create Event Modal */}
+      {showCreateEventModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              padding: '32px',
+              width: '100%',
+              maxWidth: '600px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>Create New Event</h3>
+              <button
+                onClick={() => {
+                  setShowCreateEventModal(false);
+                  setEventFormData({
+                    title: '',
+                    description: '',
+                    date: '',
+                    time: '',
+                    location: '',
+                    category: '',
+                    organizer: ''
+                  });
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  color: '#6b7280'
+                }}
+              >
+                <X style={{ height: '24px', width: '24px' }} />
+              </button>
+            </div>
+
+            {/* Event Form Fields */}
+            <div style={{ display: 'grid', gap: '20px' }}>
+              {/* Title */}
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                  Event Title *
+                </label>
+                <input
+                  type="text"
+                  value={eventFormData.title}
+                  onChange={(e) => setEventFormData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter event title"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '16px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                  Description *
+                </label>
+                <textarea
+                  value={eventFormData.description}
+                  onChange={(e) => setEventFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe your event"
+                  rows="3"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '16px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    resize: 'vertical'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                />
+              </div>
+
+              {/* Date and Time Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={eventFormData.date}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, date: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                    Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={eventFormData.time}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, time: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  />
+                </div>
+              </div>
+
+              {/* Location and Category Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={eventFormData.location}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, location: e.target.value }))}
+                    placeholder="Event location (default: Ujjain)"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                    Category
+                  </label>
+                  <select
+                    value={eventFormData.category}
+                    onChange={(e) => setEventFormData(prev => ({ ...prev, category: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      backgroundColor: 'white'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  >
+                    <option value="">Select category</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Business">Business</option>
+                    <option value="Education">Education</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Health">Health</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Organizer */}
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                  Organizer Name
+                </label>
+                <input
+                  type="text"
+                  value={eventFormData.organizer}
+                  onChange={(e) => setEventFormData(prev => ({ ...prev, organizer: e.target.value }))}
+                  placeholder={`Your name (default: ${user?.name || 'Anonymous'})`}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '16px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '32px' }}>
+              <button
+                onClick={() => {
+                  setShowCreateEventModal(false);
+                  setEventFormData({
+                    title: '',
+                    description: '',
+                    date: '',
+                    time: '',
+                    location: '',
+                    category: '',
+                    organizer: ''
+                  });
+                }}
+                style={{
+                  background: '#f3f4f6',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateEvent}
+                style={{
+                  background: 'linear-gradient(to right, #2563eb, #8b5cf6)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+              >
+                Create Event
               </button>
             </div>
           </motion.div>
